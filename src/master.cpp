@@ -31,9 +31,9 @@ void setup() {
 
 	pinMode(13,OUTPUT);
 	digitalWrite(13,LOW);
-	pinMode(5,INPUT_PULLUP);
-	state = digitalRead(5);
-	//Wire.setClock(50000); //50 000z
+	pinMode(12,INPUT_PULLUP);
+	state = digitalRead(12);
+	Wire.setClock(100000); //100 000Hz
 	Wire.begin();
 	//detecting slave id's
 	detectI2C();
@@ -41,8 +41,8 @@ void setup() {
 	while (!Serial)
 	delay(1);
 	Serial.println("index:address");
-	for(int i =0;i<127;i++){
-		Serial.print(i+1);Serial.print(":");Serial.print(i2c_address[i]);Serial.print(" ");
+	for(int i =1;i<127;i++){
+		Serial.print(i);Serial.print(":");Serial.print(i2c_address[i]);Serial.print(" ");
 	}
 	Serial.println();
 	Serial.print("total i2c: ");Serial.println(i2c_address_total);
@@ -59,8 +59,8 @@ void loop() {
 			ID = i;
 
 			digitalWrite(13,debugmode);
-			if (state != digitalRead(5)){
-				state = digitalRead(5);
+			if (state != digitalRead(12)){
+				state = digitalRead(12);
 				debugmode = !debugmode;
 				Wire.beginTransmission(ID);
 				Wire.write(DEBUG_TOGGLE);
@@ -69,13 +69,13 @@ void loop() {
 			if(debugmode){
 				debugARR[1]=(debug>>8);
 				debugARR[2]=(debug&0xFF);
-				Serial.print("WARNING!!! DEBUG MODE ENABLED   ");
+				Serial.print("WARNING!!! DEBUG MODE ENABLED  ");
 				Wire.beginTransmission(ID);
 				Wire.write(debugARR,sizeof(debugARR));
 				Wire.endTransmission();
-				i+=20;
-				if(i>10000)
-				{i=0;}
+				debug+=20;
+				if(debug>10000)
+				{debug=0;}
 
 			}
 			Serial.print("i2c ID: ");
