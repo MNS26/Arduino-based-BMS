@@ -3,11 +3,9 @@
 		"usi_i2c_slave.c": "cpp"
 	},
 	"C_Cpp.dimInactiveRegions": true,
-    "editor.insertSpaces": false,
-	"[cpp]": {
-		"editor.wordBasedSuggestions": true,
-		"editor.suggest.insertMode": "replace",
-		"editor.semanticHighlighting.enabled": true,
-		"editor.tabSize": 2
-	}
+  "editor.insertSpaces": false,
+	"editor.wordBasedSuggestions": true,
+	"editor.suggest.insertMode": "replace",
+	"editor.semanticHighlighting.enabled": true,
+	"editor.tabSize": 2
 }

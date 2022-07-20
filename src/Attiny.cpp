@@ -1,14 +1,23 @@
+#ifdef ATTINY_CORE
 #include <Arduino.h>
 #include <avr/wdt.h>
-#ifdef ATTINY_CORE
 #include <EEPROM.h>
 #include "TinyWireS.h"
 #include "commands.h"
 #include "sensors.h"
 #include "settings.h"
 
-bool updateEEP = false;
 
+
+/************/
+/*   PINS   */
+/************/
+
+
+/*************/
+/* VARIALBES */
+/*************/
+bool updateEEP = false;
 extern byte i2c_sensors[SensorCount];
 byte ID;
 int reg_size = sizeof(i2c_sensors);
@@ -17,8 +26,6 @@ int time;
 int CellV;
 int debugCellV;
 int VCal = 0;
-//extern int VCal;
-
 bool debugMode = false;
 int debugVCC;
 
@@ -136,7 +143,7 @@ void loop() {
 	{}
 	/*flag master to diable battery cus something is wrong*/
 	if(CellV>=settings.RVmax)
-	{bitSet(i2c_sensors[2],0);digitalWrite(LED_BUILTIN,1);}else{bitClear(i2c_sensors[2],0);digitalWrite(LED_BUILTIN,0);}
+	{bitSet(i2c_sensors[2],0);digitalWrite(LED_BUILTIN,0);}else{bitClear(i2c_sensors[2],0);digitalWrite(LED_BUILTIN,1);}
 
 	if(CellV<=settings.RVlow)
 	{}
@@ -144,7 +151,7 @@ void loop() {
 	{}
 	/*flag master to diable battery cus something is wrong*/
 	if(CellV<=settings.RVmin)
-	{bitSet(i2c_sensors[2],1);;digitalWrite(LED_BUILTIN,1);}else{bitClear(i2c_sensors[2],1);digitalWrite(LED_BUILTIN,0);}
+	//{bitSet(i2c_sensors[2],1);;digitalWrite(LED_BUILTIN,1);}else{bitClear(i2c_sensors[2],1);digitalWrite(LED_BUILTIN,0);}
 	
 
 }
