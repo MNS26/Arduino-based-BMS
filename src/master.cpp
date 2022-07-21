@@ -15,8 +15,8 @@
 #define SERIALMENU_MINIMAL_FOOTPRINT true
 #define SERIALMENU_DISABLE_MENU_ERROR true
 #include <SerialMenu.hpp>
-#include "SerialUI/functions.hpp"
-#include "SerialUI/UI.hpp"
+#include "SerialMenu/functions.hpp"
+#include "SerialMenu/UI.hpp"
 
 /*************/
 /* VARIABLES */
