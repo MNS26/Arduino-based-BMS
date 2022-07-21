@@ -1,90 +1,83 @@
 #ifdef ATTINY_CORE
 #include <Arduino.h>
+
 #include <avr/wdt.h>
 #include <EEPROM.h>
 #include "TinyWireS.h"
-#include "commands.h"
-#include "sensors.h"
-#include "settings.h"
+#include "commands.hpp"
+#include "sensors.hpp"
+#include "settings.hpp"
 
 
-
-/************/
-/*   PINS   */
-/************/
-
+#define SensorCount 3
 
 /*************/
 /* VARIALBES */
 /*************/
-bool updateEEP = false;
-extern byte i2c_sensors[SensorCount];
 byte ID;
-int reg_size = sizeof(i2c_sensors);
+byte i2c_data[SensorCount];
+bool updateEEP=false;
+bool debugMode=false;
+int reg_size=sizeof(i2c_data);
 int reg_pos;
 int time;
 int CellV;
-int debugCellV;
-int VCal = 0;
-bool debugMode = false;
-int debugVCC;
+struct Attiny
+{
+	int value;
+	byte option;
+	byte command;
+} i2c_dataIn;
+
 
 
 void requestEvent(){
-	TinyWireS.send(i2c_sensors[reg_pos]);
+	TinyWireS.send(i2c_data[reg_pos]);
 	reg_pos++;
-  if (reg_pos >= reg_size)
-  {
-    reg_pos = 0;
-  }
+	if (reg_pos>=reg_size)
+	{reg_pos=0;}
 }
 void receiveEvent(byte count){
-	int val;
-	byte opt;
-	byte check;
-	if(count>=1)
-	{check = TinyWireS.receive();count--;}
-
-	switch (check)
+	i2c_dataIn.command=TinyWireS.receive();
+	count--;
+	switch (i2c_dataIn.command)
 	{
-	case RESET:// Command
-		settingsReset();
-		break;
-	case DEBUG_TOGGLE:
-		debugMode=!debugMode;
-		break;
-	case DEBUG_VCC:
-		debugVCC = ((TinyWireS.receive()<<8)|TinyWireS.receive());
-		count-=2;
-		break;
-	case SETTINGS_CHANGE:
-		opt = TinyWireS.receive();
-		count--;
-		// Check if setting is within range
-		if(1>opt||opt>5) {return;}
-		val = (TinyWireS.receive()<<8)|(TinyWireS.receive());
-		count-=2;
-		switch (opt)
-		{
-		case 1:
-			settings.RVmax = val; updateEEP = true; break;
-		case 2:
-			settings.RVfull = val; updateEEP = true; break;
-		case 3:
-			settings.RVlow = val; updateEEP = true; break;
-		case 4:
-			settings.RVempty = val; updateEEP = true; break;
-		case 5:
-			settings.RVmin = val; updateEEP = true; break;
+		case RESET:
+			while (1)
+			break;			
+		case SETTINGS_RESET:// Command
+			settingsReset();
+			break;
+		case DEBUG_TOGGLE:
+			bitWrite(i2c_data[0],7,!bitRead(i2c_data[0],7));
+			break;
+		case DEBUG_VCC:
+			CellV=((TinyWireS.receive()<<8)|TinyWireS.receive());count-=2;
+			break;
+		case SETTINGS_CHANGE:
+			i2c_dataIn.option=TinyWireS.receive();count--;
+			i2c_dataIn.value=(TinyWireS.receive()<<8)|(TinyWireS.receive());count-=2;
+			switch (i2c_dataIn.option)
+			{
+				case 1:
+					settings.Vmax=i2c_dataIn.value; updateEEP=true; break;
+				case 2:
+					settings.Vfull=i2c_dataIn.value; updateEEP=true; break;
+				case 3:
+					settings.Vlow=i2c_dataIn.value; updateEEP=true; break;
+				case 4:
+					settings.Vmin=i2c_dataIn.value; updateEEP=true; break;
+				case 5:
+					settings.VCal=i2c_dataIn.value; updateEEP=true; break;
+				default:
+					break;
+			}
+			case ID_CHANGE:
+				ID=TinyWireS.receive(); updateEEP=true; break;
 		default:
 			break;
-		}
-		case ID_CHANGE:
-			ID = TinyWireS.receive(); updateEEP = true; break;
-	default:
-		break;
 	}
-	// Making sure there are no bytes left in case we drop out early
+	//Making sure there are no bytes left in case we drop out early
 	while (count--)
 	{
 		TinyWireS.receive();
@@ -92,67 +85,60 @@ void receiveEvent(byte count){
 }
 
 void setup() {
-	wdt_enable(WDTO_500MS);
+	pinMode(SDA,INPUT_PULLUP);
+	pinMode(SCL,INPUT_PULLUP);
 	//only triggers when eeprom is blank
-	if(EEPROM.read(0) == 255){
-		EEPROM.put(0,defualtSettings);
-	}
+	if(EEPROM.read(0)==255)
+	{EEPROM.put(0,defualtSettings);}
 	EEPROM.get(0,settings);
-
-	//jut store a defualt value in there
-	if(EEPROM.read(sizeof(settings)+1) == 255){
-		EEPROM.put(sizeof(settings)+1,ID);
-	}
+	if(EEPROM.read(sizeof(settings)+1)==255)
+	{EEPROM.put(sizeof(settings)+1,1);}
 	EEPROM.get(sizeof(settings)+1,ID);
 	TinyWireS.begin(ID);
-
 	TinyWireS.onReceive(receiveEvent);
 	TinyWireS.onRequest(requestEvent);
 	pinMode(LED_BUILTIN,OUTPUT);
 	digitalWrite(LED_BUILTIN,0);
-	time = millis();
-	i2c_sensors[2]=0;
+	time=millis();
+	wdt_enable(WDTO_500MS);
 }
 
 void loop() {
 	wdt_reset();
 	TinyWireS.stateCheck();
+	//just to be sure to not wear out eeprom
 	if(updateEEP){
 		EEPROM.put(0,settings);
 		EEPROM.put(sizeof(settings)+1,ID);
-		updateEEP = false;
-	}
-
-	if(debugMode){
-		bitSet(i2c_sensors[2],7);
-	}
-	else{
-		bitClear(i2c_sensors[2],7);
+		updateEEP=false;
 	}
 	//when debug mode isnt true(defualt) use vcc
-	if(debugMode==false)
-	{CellV = getVCC(CellV);}
+	if(!bitRead(i2c_data[0],7))
+	{CellV=getVCC(CellV);}
+	
+	CellV-=settings.VCal;
+	i2c_data[1]=((byte)(CellV>>8));
+	i2c_data[2]=((byte)(CellV&0xff));
+	
+	if(CellV>=settings.Vmax)
+	{bitSet(i2c_data[0],0);}
 	else
-	{CellV = debugVCC;}
-	
-	CellV -= VCal;
-	i2c_sensors[0] = ((byte)(CellV >> 8));
-	i2c_sensors[1] = ((byte)(CellV & 0xff));
-	
-	if(CellV>=settings.RVfull)
-	{}
-	/*flag master to diable battery cus something is wrong*/
-	if(CellV>=settings.RVmax)
-	{bitSet(i2c_sensors[2],0);digitalWrite(LED_BUILTIN,0);}else{bitClear(i2c_sensors[2],0);digitalWrite(LED_BUILTIN,1);}
+	{bitClear(i2c_data[0],0);}
 
-	if(CellV<=settings.RVlow)
-	{}
-	if(CellV<=settings.RVempty)
-	{}
-	/*flag master to diable battery cus something is wrong*/
-	if(CellV<=settings.RVmin)
-	//{bitSet(i2c_sensors[2],1);;digitalWrite(LED_BUILTIN,1);}else{bitClear(i2c_sensors[2],1);digitalWrite(LED_BUILTIN,0);}
-	
+	if(settings.Vmax>CellV&&CellV>=settings.Vfull)
+	{bitSet(i2c_data[0],1);}
+	else
+	{bitClear(i2c_data[0],1);}
 
+	if(settings.Vmin<CellV&&CellV<=settings.Vlow)
+	{bitSet(i2c_data[0],2);}
+	else
+	{bitClear(i2c_data[0],2);}
+	
+	if(CellV<=settings.Vmin)
+	{bitSet(i2c_data[0],3);}
+	else
+	{bitClear(i2c_data[0],3);}
 }
+
 #endif

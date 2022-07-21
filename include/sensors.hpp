@@ -12,9 +12,6 @@
 #endif
 #endif
 
-#define SensorCount 3 //Voltage,Flags
-byte i2c_sensors[SensorCount];
-
 uint16_t getVCC() {
   //reads internal 1V1 reference against VCC
   #if defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny44__)
