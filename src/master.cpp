@@ -15,7 +15,8 @@
 #define SERIALMENU_MINIMAL_FOOTPRINT true
 #define SERIALMENU_DISABLE_MENU_ERROR true
 #include <SerialMenu.hpp>
-#include "UI.hpp"
+#include "SerialUI/functions.hpp"
+#include "SerialUI/UI.hpp"
 
 /*************/
 /* VARIABLES */
@@ -51,17 +52,6 @@ extern const uint8_t MainMenuSize;
 extern const uint8_t SettingsMenuSize;
 extern const SerialMenuEntry MainMenu[];
 extern const SerialMenuEntry SettingsMenu[];
-
-
-
-	
-
-
-	
-
-
-
-
 
 void detectI2C(){
 	for (byte i = 1; i < 127; i++){
@@ -128,7 +118,7 @@ void setup() {
 
 void loop() {
 	wdt_reset();
-	menu.run(100);
+	menu.run(50);
 	for(unsigned int i=1;i<sizeof(i2c_address);i++){
 		if(i2c_address[i]!=0){
 			ID = i;
