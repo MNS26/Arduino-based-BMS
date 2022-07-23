@@ -1,8 +1,8 @@
+#include <Arduino.h>
 #ifdef __AVR_ATmega2560__
 /*************/
 /* LIBRARIES */
 /*************/
-#include <Arduino.h>
 #include <Wire.h>
 #include <avr/wdt.h>
 #include "sensors.hpp"
@@ -11,7 +11,7 @@
 
 #define SERIALMENU_DISABLE_HEARTBEAT_ON_IDLE true
 #define SERIALMENU_DISABLE_SERIAL_SETUP true
-#define SERIALMENU_DISABLE_PROGMEM_SUPPORT true
+//#define SERIALMENU_DISABLE_PROGMEM_SUPPORT true
 #define SERIALMENU_MINIMAL_FOOTPRINT true
 #define SERIALMENU_DISABLE_MENU_ERROR true
 #include <SerialMenu.hpp>
@@ -21,9 +21,8 @@
 /*************/
 /* VARIABLES */
 /*************/
-byte i2c_address[127]; //skipping first 8 addresses
+byte i2c_address[127];
 byte i2c_address_total=0;
-byte flags;
 byte debugARR[3] = {DEBUG_VCC,0,0};
 uint16_t reading;
 uint16_t i2c_reading;
@@ -38,8 +37,8 @@ bool debugON = false;
 int ID;
 struct i2c_datain
 {
-	int VCC;
-	byte flags;
+	int VCC = 0;
+	byte flags = 0;
 } i2c_dataIn;
 struct i2c_dataout
 {
@@ -54,6 +53,8 @@ extern const SerialMenuEntry MainMenu[];
 extern const SerialMenuEntry SettingsMenu[];
 
 void detectI2C(){
+	memset(i2c_address, 0, sizeof(i2c_address));
+	i2c_address_total=0;
 	for (byte i = 1; i < 127; i++){
 		Wire.beginTransmission (i);
 		if (Wire.endTransmission () == 0)
@@ -94,10 +95,14 @@ void debugVCC(int sID,bool debugState){
 	}
 }
 
+
+
 void setup() {
 	pinMode(SDA,INPUT_PULLUP);
 	pinMode(SCL,INPUT_PULLUP);
+	pinMode(10,OUTPUT);
 	pinMode(13,OUTPUT);
+	digitalWrite(10,HIGH);
 	digitalWrite(13,LOW);
 	pinMode(12,INPUT_PULLUP);
 	
@@ -106,39 +111,43 @@ void setup() {
 	
 	//detecting slave id's
 	detectI2C();
-	Serial.begin(38400);
+	Serial.begin(115200);
 	
 	while (!Serial)
 	delay(5);
 	Serial.println();
 	menu.load(MainMenu,MainMenuSize);
 	menu.show();
-	wdt_enable(WDTO_1S);
+	//wdt_enable(WDTO_1S);
 }
 
 void loop() {
-	wdt_reset();
+	//wdt_reset();
 	menu.run(50);
 	for(unsigned int i=1;i<sizeof(i2c_address);i++){
 		if(i2c_address[i]!=0){
 			ID = i;
 			debugtoggle(12);
 			lastPinState = pinState;
-			delay(1);
+			delay(3);
 
-			Wire.requestFrom(ID,1);
-			flags = Wire.read();
-			
-			debugVCC(ID,bitRead(flags,7));
-			delay(1);
-			
-			Wire.requestFrom(ID,2);
+			// To update the flags
+			Wire.requestFrom(ID,3);
+			i2c_dataIn.flags = Wire.read();
 			i2c_reading = ((Wire.read()<<8)|(Wire.read()&0xFF));
-			
+
+
+			debugVCC(ID,bitRead(i2c_dataIn.flags,7));
+			delay(3);
+
+			Wire.requestFrom(ID,3);
+			i2c_dataIn.flags = Wire.read();
+			i2c_reading = ((Wire.read()<<8)|(Wire.read()&0xFF));
+
 			reading = getVCC(reading);
 			reading -= VCal;
 			/*
-			if(bitRead(flags,7))
+			if(bitRead(i2c_dataIn.flags,7))
 			{
 			Serial.print("WARNING!!! SLAVE DEBUG MODE  ");
 			Serial.print(F("i2c ID: "));Serial.print(ID);Serial.print(F("  |  "));
@@ -152,7 +161,7 @@ void loop() {
 			Serial.print(F("  :  S v"));Serial.print((float)i2c_reading/1000);
 			}
 			//print  i2c ID: XX  |  M vX.XX  :  S vX.XX  |  Flags: X
-			Serial.print(F("  |  Flags: "));Serial.print(flags,BIN);
+			Serial.print(F("  |  Flags: "));Serial.print(i2c_dataIn.flags,BIN);
 			Serial.println();
 			*/
 			while (Wire.available())
