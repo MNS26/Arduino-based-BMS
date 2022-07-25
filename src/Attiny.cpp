@@ -19,46 +19,24 @@ byte i2c_data[SensorCount];
 bool updateEEP=false;
 bool debugMode=false;
 int reg_size=sizeof(i2c_data);
-int reg_pos;
+int reg_pos=0;
+int sett_size=sizeof(settings);///sizeof(uint16_t);
+int sett_pos=0;
 unsigned int CellV;
 struct Attiny
 {
 	byte command;
 	byte option;
-	int value;
 } i2c_dataIn;
-
-//void(* resetFunc) (void) = 0; //declare reset function @ address 0
 
 void requestEvent(){
 	switch (mode)
 	{
-		TinyWireS.send(settings.Vmax);
-		TinyWireS.send(settings.Vfull);		
-		TinyWireS.send(settings.Vlow);
-		TinyWireS.send(settings.Vmin);
-		TinyWireS.send(settings.VCal);
-		mode=0;
-		break;
-	case VMAX:
-		TinyWireS.send(settings.Vmax);
-		mode=0;
-		break;
-	case VFULL:
-		TinyWireS.send(settings.Vfull);		
-		mode=0;
-		break;
-	case VLOW:
-		TinyWireS.send(settings.Vlow);
-		mode=0;
-		break;
-	case VMIN:
-		TinyWireS.send(settings.Vmin);
-		mode=0;
-		break;
-	case VCAL:
-		TinyWireS.send(settings.VCal);
-		mode=0;
+	case ON://enable get settings
+		TinyWireS.send(settings[sett_pos]);
+		sett_pos++;
+		if(sett_pos>=sett_size)
+		{sett_pos=0;}
 		break;
 	default:
 		TinyWireS.send(i2c_data[reg_pos]);
@@ -79,30 +57,29 @@ void receiveEvent(byte count){
 			break;
 		case CHANGE_SETTINGS:
 			i2c_dataIn.option=TinyWireS.receive();count--;
-			i2c_dataIn.value=(TinyWireS.receive()<<8)|(TinyWireS.receive());count-=2;
+			//i2c_dataIn.value=(TinyWireS.receive()<<8)|(TinyWireS.receive());count-=2;
 			switch (i2c_dataIn.option)
 			{
 				case 1:
-					settings.Vmax=i2c_dataIn.value; updateEEP=true; break;
+					settings[0]=TinyWireS.receive();settings[1]=TinyWireS.receive(); count-=2; updateEEP=true; break;
 				case 2:
-					settings.Vfull=i2c_dataIn.value; updateEEP=true; break;
+					settings[2]=TinyWireS.receive();settings[3]=TinyWireS.receive(); count-=2; updateEEP=true; break;
 				case 3:
-					settings.Vlow=i2c_dataIn.value; updateEEP=true; break;
+					settings[4]=TinyWireS.receive();settings[5]=TinyWireS.receive(); count-=2; updateEEP=true; break;
 				case 4:
-					settings.Vmin=i2c_dataIn.value; updateEEP=true; break;
+					settings[6]=TinyWireS.receive();settings[7]=TinyWireS.receive(); count-=2; updateEEP=true; break;
 				case 5:
-					settings.VCal=i2c_dataIn.value; updateEEP=true; break;
+					settings[8]=TinyWireS.receive();settings[9]=TinyWireS.receive(); count-=2; updateEEP=true; break;
 				default:
 					break;
 			}
 		case CHANGE_ID:
-				ID=TinyWireS.receive(); updateEEP=true; break;
+				ID=TinyWireS.receive(); count--; updateEEP=true; break;
 		case RESTART:
-			//digitalWrite(LED_BUILTIN,1);
-			//delay(100);
-			//digitalWrite(LED_BUILTIN,0);
-			//resetFunc();
-			exit(0);
+			while (1)
+			{
+				/* code */
+			};
 			break;			
 		case RESET_SETTINGS:// Command
 			settingsReset();
@@ -140,7 +117,7 @@ void setup() {
 	TinyWireS.begin(ID);
 	TinyWireS.onReceive(receiveEvent);
 	TinyWireS.onRequest(requestEvent);
-	wdt_enable(WDTO_500MS);
+	wdt_enable(WDTO_1S);
 }
 
 void loop() {
@@ -156,26 +133,27 @@ void loop() {
 	if(!bitRead(i2c_data[0],7))
 	{CellV=getVCC(CellV);}
 	
-	CellV-=settings.VCal;
+	CellV-=(settings[8]<<8|settings[9]);
 	i2c_data[1]=((byte)(CellV>>8));
 	i2c_data[2]=((byte)(CellV&0xff));
 	
-	if(CellV>=settings.Vmax)
+	//CellV>=vmax
+	if(CellV>=(settings[0]<<8|settings[1]))
 	{bitSet(i2c_data[0],0);}
 	else
 	{bitClear(i2c_data[0],0);}
-
-	if(settings.Vmax>CellV&&CellV>=settings.Vfull)
+	//vmax>Cellv&&Cellv>=vfull
+	if((settings[0]<<8|settings[1])>CellV&&CellV>=(settings[2]<<8|settings[3]))
 	{bitSet(i2c_data[0],1);}
 	else
 	{bitClear(i2c_data[0],1);}
-
-	if(settings.Vmin<CellV&&CellV<=settings.Vlow)
+	//vlow<Cellv&&Cellv<=vfull
+	if((settings[4]<<8|settings[5])<CellV&&CellV<=(settings[2]<<8|settings[3]))
 	{bitSet(i2c_data[0],2);}
 	else
 	{bitClear(i2c_data[0],2);}
-	
-	if(CellV<=settings.Vmin)
+	//Cellv<=vmin
+	if(CellV<=(settings[6]<<8|settings[7]))
 	{bitSet(i2c_data[0],3);}
 	else
 	{bitClear(i2c_data[0],3);}

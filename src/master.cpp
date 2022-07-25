@@ -124,8 +124,8 @@ void setup() {
 void loop() {
 	//wdt_reset();
 	menu.run(50);
-	for(unsigned int i=1;i<sizeof(i2c_address);i++){
-		if(i2c_address[i]!=0){
+	//for(unsigned int i=1;i<sizeof(i2c_address);i++){
+		/*if(i2c_address[i]!=0){
 			ID = i;
 			debugtoggle(12);
 			lastPinState = pinState;
@@ -163,13 +163,13 @@ void loop() {
 			//print  i2c ID: XX  |  M vX.XX  :  S vX.XX  |  Flags: X
 			Serial.print(F("  |  Flags: "));Serial.print(i2c_dataIn.flags,BIN);
 			Serial.println();
-			*/
+			//
 			while (Wire.available())
 			{
 				Wire.read();
 			}
-		}
-	}
+		}*/
+	//}
 		delay(150);
 
 }
