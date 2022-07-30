@@ -22,7 +22,7 @@ struct slaveSettings
 int selID;
 int newID;
 int slaveID=0;
-const char noID[] PROGMEM = "No slave ID set\nPlease set slave ID in Main Menu";
+const char noID[] = "No slave ID set\nPlease set slave ID in Main Menu";
 
 void listI2C(){
 	Serial.print("Actice slave addresses: ");
@@ -50,16 +50,17 @@ bool selectID(int sID){
 void reset(int sID){
 	if(slaveID==0)
 	{Serial.println(noID);return;}
-	Wire.beginTransmission(sID);
-	Wire.write(RESET_SETTINGS);
-	Wire.endTransmission();
+	i2c.beginTransmission(sID);
+	i2c.write(RESET_SETTINGS);
+	i2c.endTransmission();
 }
 void restart(int sID){
 	if(slaveID==0)
 	{Serial.println(noID);return;}
-	Wire.beginTransmission(sID);
-	Wire.write(RESTART);
-	Wire.endTransmission();
+	i2c.beginTransmission(sID);
+	i2c.write(RESTART);
+	i2c.endTransmission();
+	Serial.println();
 }
 
 void changeID(byte nID){
@@ -77,29 +78,26 @@ void changeID(byte nID){
 	Serial.println();
 	dataOut.command=CHANGE_ID;
 	dataOut.val1=nID;
-	Wire.beginTransmission(slaveID);
-	Wire.write((byte *) &dataOut,sizeof(dataOut));
-	Wire.endTransmission();
+	i2c.beginTransmission(slaveID);
+	i2c.write((byte *) &dataOut,sizeof(dataOut));
+	i2c.endTransmission();
 	return;
 }
 
 void CurrentSettings(){
-	dataOut.command=GET_SETTINGS;
-	dataOut.val1=ON;
-	Wire.beginTransmission(slaveID);
-	Wire.write((byte *) &dataOut,sizeof(dataOut));
-	Wire.endTransmission();
+	i2c.beginTransmission(slaveID);
+	i2c.write(GET_SETTINGS);
+	i2c.endTransmission();
 	delay(3);
-	Wire.requestFrom(slaveID,10);
-	slaveSettings.Vmax = ((Wire.read()<<8)|(Wire.read()&0xFF));
-	slaveSettings.Vfull = ((Wire.read()<<8)|(Wire.read()&0xFF));
-	slaveSettings.Vlow = ((Wire.read()<<8)|(Wire.read()&0xFF));
-	slaveSettings.Vmin = ((Wire.read()<<8)|(Wire.read()&0xFF));
-	slaveSettings.VCal = ((Wire.read()<<8)|(Wire.read()&0xFF));
-	dataOut.val1=OFF;
-	Wire.beginTransmission(slaveID);
-	Wire.write((byte *) &dataOut,sizeof(dataOut));
-	Wire.endTransmission();
+	i2c.requestFrom(slaveID,10);
+	slaveSettings.Vmax = ((i2c.read()<<8)|(i2c.read()&0xFF));
+	slaveSettings.Vfull = ((i2c.read()<<8)|(i2c.read()&0xFF));
+	slaveSettings.Vlow = ((i2c.read()<<8)|(i2c.read()&0xFF));
+	slaveSettings.Vmin = ((i2c.read()<<8)|(i2c.read()&0xFF));
+	slaveSettings.VCal = ((i2c.read()<<8)|(i2c.read()&0xFF));
+	i2c.beginTransmission(slaveID);
+	i2c.write(GET_SETTINGS);
+	i2c.endTransmission();
 	delay(3);
 	Serial.print("Cell max: ");Serial.print(slaveSettings.Vmax);Serial.println("mV");
 	Serial.print("Cell full: ");Serial.print(slaveSettings.Vfull);Serial.println("mV");

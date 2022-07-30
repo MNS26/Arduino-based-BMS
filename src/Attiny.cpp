@@ -13,7 +13,7 @@
 /*************/
 /* VARIALBES */
 /*************/
-byte mode;
+bool requestSettings=false;
 byte ID;
 byte i2c_data[SensorCount];
 bool updateEEP=false;
@@ -30,19 +30,23 @@ struct Attiny
 } i2c_dataIn;
 
 void requestEvent(){
-	switch (mode)
+	switch (requestSettings)
 	{
-	case ON://enable get settings
+	case true:
+		//TinyWireS.send(B11110000);
 		TinyWireS.send(settings[sett_pos]);
 		sett_pos++;
-		if(sett_pos>=sett_size)
+		if(sett_pos==sett_size)
 		{sett_pos=0;}
 		break;
-	default:
+	case false:
+		//TinyWireS.send(B11001100);
 		TinyWireS.send(i2c_data[reg_pos]);
 		reg_pos++;
 		if (reg_pos>=reg_size)
 		{reg_pos=0;}
+		break;
+	default:
 		break;
 	}
 }
@@ -52,23 +56,22 @@ void receiveEvent(byte count){
 	switch (i2c_dataIn.command)
 	{
 		case GET_SETTINGS:
-			mode = TinyWireS.receive();
-			count--;
+			requestSettings=!requestSettings;
 			break;
 		case CHANGE_SETTINGS:
 			i2c_dataIn.option=TinyWireS.receive();count--;
 			//i2c_dataIn.value=(TinyWireS.receive()<<8)|(TinyWireS.receive());count-=2;
 			switch (i2c_dataIn.option)
 			{
-				case 1:
+				case VMAX:
 					settings[0]=TinyWireS.receive();settings[1]=TinyWireS.receive(); count-=2; updateEEP=true; break;
-				case 2:
+				case VFULL:
 					settings[2]=TinyWireS.receive();settings[3]=TinyWireS.receive(); count-=2; updateEEP=true; break;
-				case 3:
+				case VLOW:
 					settings[4]=TinyWireS.receive();settings[5]=TinyWireS.receive(); count-=2; updateEEP=true; break;
-				case 4:
+				case VMIN:
 					settings[6]=TinyWireS.receive();settings[7]=TinyWireS.receive(); count-=2; updateEEP=true; break;
-				case 5:
+				case VCAL:
 					settings[8]=TinyWireS.receive();settings[9]=TinyWireS.receive(); count-=2; updateEEP=true; break;
 				default:
 					break;
@@ -96,6 +99,7 @@ void receiveEvent(byte count){
 	//Making sure there are no bytes left in case we drop out early
 	while (count--)
 	{
+		count--;
 		TinyWireS.receive();
 	}
 }
@@ -110,7 +114,7 @@ void setup() {
 	{EEPROM.put(0,defualtSettings);}
 	EEPROM.get(0,settings);
 	if(EEPROM.read(sizeof(settings)+1)==255)
-	{EEPROM.put(sizeof(settings)+1,1);}
+	{EEPROM.put(sizeof(settings)+1,127);}
 	EEPROM.get(sizeof(settings)+1,ID);
 	delay(10);
 	digitalWrite(LED_BUILTIN,0);

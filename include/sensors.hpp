@@ -11,6 +11,7 @@
 #define delayMicroseconds(x) tws_delay_micros(x) // replaces delayMicroseconds with tws_delay_micros
 #endif
 #endif
+#ifndef ARDUINO_ARCH_RP2040
 
 uint16_t getVCC() {
   //reads internal 1V1 reference against VCC
@@ -42,4 +43,5 @@ uint16_t getVCC(int oldVCC){
 	else
 	{return getVCC();}
 }
+#endif
 #endif
