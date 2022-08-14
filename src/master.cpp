@@ -56,6 +56,7 @@ unsigned long Time;
 
 
 
+
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &i2c, OLED_RESET,1000000UL,1000000UL);
 Adafruit_SSD1306 display2(SCREEN_WIDTH, SCREEN_HEIGHT, &i2c, OLED_RESET,1000000UL,1000000UL);
 
@@ -104,10 +105,10 @@ void setup() {
 	display.display();
 	delay(10);
 	reseti2c();
-	initChart(display2,SCREEN2_ADDRESS);
-	chartbegin();
-	chartUpdate(VCCmin);
-	//initChart(display2);
+	initgraph(display2,SCREEN2_ADDRESS);
+	graphbegin();
+	graphUpdate(VCCmin);
+	//initgraph(display2);
 	menu.load(MainMenu,MainMenuSize);
 	menu.show();
 }
@@ -127,10 +128,10 @@ void loop()
 	{low_batt=millis();warning=!warning;}
 	if(millis()-idle_cursor>=300)
 	{idle_cursor=millis();idle_cursor_toggle=!idle_cursor_toggle;}
-	if(millis()-Time>=(60000*5))//5 minutes
+	if(millis()-Time>=(1000*10))//5 minutes
 	{
 		Time=millis();
-		chartUpdate(VCC);
+		graphUpdate(VCC);
 	}
 	menu.run(1);	
 	if(millis()-500>lcd_update)
@@ -138,10 +139,11 @@ void loop()
 		lcd_update = millis();
 		getI2CData();
 	}
-
+	//graphClear();
 	display.clearDisplay();
-	if(millis()<standby+(1000*standby_timeout))
-	{		
+	if(millis()-standby<(1000*standby_timeout))
+	{
+		graphDisplay();
 		display.drawBitmap(0,0,main_screen,128,64,1);
 		display.setCursor(110, 3);
 		//display.print((int)(counter/1.2));
@@ -160,6 +162,7 @@ void loop()
 	}
 	else
 	{
+		graphStandby(idle_cursor_toggle);
 		if(idle_cursor_toggle)
 		{
 			display.drawLine(2,7,9,7,WHITE);
@@ -177,6 +180,7 @@ void loop()
 		if(standby_timeout!=15) standby_timeout=15;
 		display.drawBitmap(92,0,warn,9,10,WHITE);
 	}
+
 	display.display();
 }
 #endif
