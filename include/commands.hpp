@@ -19,6 +19,11 @@
 /***********/
 
 /* SETTINGS */
+#define VMAX 0x01
+#define VFULL 0x02
+#define VLOW 0x03
+#define VMIN 0x04
+#define VCAL 0x05
 
 #define OFF 0x00
 #define ON 0x01

@@ -1,11 +1,12 @@
+//#define LED_BUILTIN PB3
 #include <Arduino.h>
 #ifdef ATTINY_CORE
 #include <avr/wdt.h>
 #include <EEPROM.h>
 #include "TinyWireS.h"
 #include "commands.hpp"
-#include "sensors.hpp"
-#include "settings.hpp"
+#include "slave/sensors.hpp"
+#include "slave/settings.hpp"
 
 
 #define SensorCount 3
@@ -17,11 +18,11 @@ bool requestSettings=false;
 byte ID;
 byte i2c_data[SensorCount];
 bool updateEEP=false;
-bool debugMode=false;
 int reg_size=sizeof(i2c_data);
 int reg_pos=0;
 int sett_size=sizeof(settings);///sizeof(uint16_t);
 int sett_pos=0;
+unsigned int time;
 unsigned int CellV;
 struct Attiny
 {
@@ -109,12 +110,12 @@ void setup() {
 	digitalWrite(LED_BUILTIN,1);
 	pinMode(SDA,INPUT_PULLUP);
 	pinMode(SCL,INPUT_PULLUP);
-	//only triggers when eeprom is blank
+	////only triggers when eeprom is blank
 	if(EEPROM.read(0)==255)
 	{EEPROM.put(0,defualtSettings);}
 	EEPROM.get(0,settings);
 	if(EEPROM.read(sizeof(settings)+1)==255)
-	{EEPROM.put(sizeof(settings)+1,127);}
+	{EEPROM.put(sizeof(settings)+1,100);}
 	EEPROM.get(sizeof(settings)+1,ID);
 	delay(10);
 	digitalWrite(LED_BUILTIN,0);
@@ -133,9 +134,12 @@ void loop() {
 		EEPROM.put(sizeof(settings)+1,ID);
 		updateEEP=false;
 	}
+
+	if(millis()>time+1000)
+	{time=millis();digitalWrite(LED_BUILTIN,!digitalRead(LED_BUILTIN));}
 	//when debug mode isnt true(defualt) use vcc
 	if(!bitRead(i2c_data[0],7))
-	{CellV=getVCC(CellV);}
+	{CellV=getVCC(CellV,5);}
 	
 	CellV-=(settings[8]<<8|settings[9]);
 	i2c_data[1]=((byte)(CellV>>8));

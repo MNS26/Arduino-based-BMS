@@ -1,6 +1,23 @@
 {
 	"files.associations": {
-		"usi_i2c_slave.c": "cpp"
+		"usi_i2c_slave.c": "cpp",
+		"*.x": "cpp",
+		"mstd_iterator": "cpp",
+		"array": "cpp",
+		"*.tcc": "cpp",
+		"deque": "cpp",
+		"forward_list": "cpp",
+		"list": "cpp",
+		"string": "cpp",
+		"unordered_map": "cpp",
+		"unordered_set": "cpp",
+		"vector": "cpp",
+		"string_view": "cpp",
+		"memory": "cpp",
+		"random": "cpp",
+		"initializer_list": "cpp",
+		"*.tpp": "cpp",
+		"utility": "cpp"
 	},
 	"C_Cpp.dimInactiveRegions": true,
   "editor.insertSpaces": false,

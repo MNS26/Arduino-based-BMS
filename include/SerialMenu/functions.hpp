@@ -25,14 +25,16 @@ int slaveID=0;
 const char noID[] = "No slave ID set\nPlease set slave ID in Main Menu";
 
 void listI2C(){
-	Serial.print("Actice slave addresses: ");
-	for(unsigned int i=1;i<127;i++){
+	Serial.println("Actice slave addresses");
+	for(unsigned int i=8;i<127;i++){
 		if(i2c_address[i]==1){
-		if(i%20==0)
-		Serial.println();
-
+	//	if(i%20==0)
+		Serial.print("ID:  ");
+		Serial.print(i,BIN);
+		Serial.print("(");
 		Serial.print(i);
-		Serial.print(", ");
+		Serial.print(")");
+		Serial.println();
 		}
 	}
 	Serial.println();
@@ -61,6 +63,15 @@ void restart(int sID){
 	i2c.write(RESTART);
 	i2c.endTransmission();
 	Serial.println();
+}
+
+void restartAll(){
+	for(int i=8;i<127;i++){
+		delay(5);
+		i2c.beginTransmission(i);
+		i2c.write(RESTART);
+		i2c.endTransmission();
+	}
 }
 
 void changeID(byte nID){
